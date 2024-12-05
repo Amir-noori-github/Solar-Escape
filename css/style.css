@@ -194,6 +194,20 @@ main {
     margin: 0 0 1rem 0;
 }
 
+.blue-icon {
+  background-color: blue;
+  width: 25px;
+  height: 25px;
+  border-radius: 50%;
+}
+.green-icon {
+  background-color: green;
+  width: 25px;
+  height: 25px;
+  border-radius: 50%;
+}
+
+
 @media screen and (min-width: 769px) {
     .boxes {
         font-size: initial;

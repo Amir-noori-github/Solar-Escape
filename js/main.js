@@ -1,51 +1,123 @@
 'use strict';
-/* 1. show map using Leaflet library. (L comes from the Leaflet library) */
-
-const map = L.map('map', {tap: false});
+/* 1. Näytetään kartta Leaflet-kirjaston avulla */
+const map = L.map('map', { tap: false });
 L.tileLayer('https://{s}.google.com/vt/lyrs=s&x={x}&y={y}&z={z}', {
   maxZoom: 20,
   subdomains: ['mt0', 'mt1', 'mt2', 'mt3'],
 }).addTo(map);
 map.setView([60, 24], 7);
 
+// Globaalit muuttujat
+const apiUrl = 'http://127.0.0.1:5000/';
+const startLoc = 'EFHK';
+const globalGoals = [];
+const airportMarkers = L.featureGroup().addTo(map);
 
-// global variables
+// Ikonit
+const blueIcon = L.divIcon({ className: 'blue-icon' });
+const greenIcon = L.divIcon({ className: 'green-icon' });
 
-// icons
+// Pelaajan nimen lomake
+document.querySelector('#player-form').addEventListener('submit', function (evt) {
+  evt.preventDefault();
+  const playerName = document.querySelector('#player-input').value.trim();
+  if (playerName) {
+    document.querySelector('#player-modal').classList.add('hide');
+    gameSetup(`${apiUrl}newgame?player=${playerName}&loc=${startLoc}`);
+  } else {
+    alert('Please enter a player name!');
+  }
+});
 
-// form for player name
-
-// function to fetch data from API
+// Datahaun funktio
 async function getData(url) {
-     const response = await fetch(url);
-     if (! response.ok) throw new Error('Invalid server input!');
-     const data = await response.json();
-     return data;
+  const response = await fetch(url);
+  if (!response.ok) {
+    throw new Error('Invalid server response!');
+  }
+  return await response.json();
 }
 
-// function to update game status
-
-// function to show weather at selected airport
-
-// function to check if any goals have been reached
-
-// function to update goal data and goal table in UI
-
-// function to check if game is over
-
-// function to set up game
-// this is the main function that creates the game and calls the other functions
- async function gameSetup() {
-  try {
-      const gameData = await getData('testdata/newgame.json');
-      console.log(gameData);
-      for (let airport of gameData.location) {
-          console.log(airport)
+// Tavoitteiden päivittäminen
+function updateGoals(goals) {
+  document.querySelector('#goals').innerHTML = '';
+  for (const goal of goals) {
+    const li = document.createElement('li');
+    const figure = document.createElement('figure');
+    const img = document.createElement('img');
+    const figcaption = document.createElement('figcaption');
+    img.src = goal.icon;
+    img.alt = `goal name: ${goal.name}`;
+    figcaption.innerHTML = goal.description;
+    figure.append(img, figcaption);
+    li.append(figure);
+    if (goal.reached) {
+      li.classList.add('done');
+      if (!globalGoals.includes(goal.goalid)) {
+        globalGoals.push(goal.goalid);
       }
-    } catch (error) {
-      console.log(error);
+    }
+    document.querySelector('#goals').append(li);
   }
 }
-gameSetup();
 
-// event listener to hide goal splash
+// Pelin alustus
+async function gameSetup(url) {
+  try {
+    document.querySelector('.goal').classList.add('hide');
+    airportMarkers.clearLayers();
+
+    const gameData = await getData(url);
+    console.log(gameData);
+
+    // Päivitä pelaajan nimi
+    document.querySelector('#player-name').textContent = `Player: ${gameData.status.name}`;
+
+    // Käsitellään lentokentät
+    for (const airport of gameData.location) {
+      const marker = L.marker([airport.latitude, airport.longitude]).addTo(map);
+      airportMarkers.addLayer(marker);
+
+      if (airport.active) {
+        // Pelaajan nykyinen sijainti
+        map.flyTo([airport.latitude, airport.longitude], 10);
+        marker.bindPopup(`You are here: <b>${airport.name}</b>`);
+        marker.openPopup();
+        marker.setIcon(greenIcon);
+      } else {
+        // Muu lentokenttä
+        marker.setIcon(blueIcon);
+
+        // Luo popup-sisältö
+        const popupContent = document.createElement('div');
+        const h4 = document.createElement('h4');
+        h4.textContent = airport.name;
+        popupContent.append(h4);
+
+        const goButton = document.createElement('button');
+        goButton.classList.add('button');
+        goButton.textContent = 'Fly here';
+        popupContent.append(goButton);
+
+        const p = document.createElement('p');
+        p.textContent = `Distance: ${airport.distance} km`;
+        popupContent.append(p);
+
+        marker.bindPopup(popupContent);
+
+        // "Fly here" -napin toiminnallisuus
+        goButton.addEventListener('click', function () {
+          gameSetup(`${apiUrl}flyto?game=${gameData.status.id}&dest=${airport.ident}`);
+        });
+      }
+    }
+
+    // Päivitä tavoitteet
+    updateGoals(gameData.goals);
+  } catch (error) {
+    console.error('Error during game setup:', error);
+  }
+}
+
+// Käynnistä peli oletusasetuksilla
+gameSetup(`${apiUrl}newgame?player=default&loc=${startLoc}`);
