@@ -4,6 +4,7 @@
     --white: rgb(248, 246, 246);
     --grey: rgb(128, 128, 128);
     --dark-grey: rgb(57, 57, 57);
+    --deep-red: rgb(66, 20, 19);
 }
 
 /* utilites */
@@ -17,13 +18,12 @@
 }
 
 .button-white {
-    background-color: var(--white);
+    background-color: rgb(235, 183, 183);
     color: var(--black);
 }
 
 .button:hover {
     transform: scale(1.1);
-
 }
 
 .flex-wrap {
@@ -31,13 +31,16 @@
     flex-wrap: wrap;
 }
 
-.space-evenly {
-    justify-content: space-evenly;
+.flex-wrap-title {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-start;
+    align-content: flex-start;
 }
 
-.responsive-img {
-    width: 100%;
-    height: auto;
+
+.space-evenly {
+    justify-content: space-evenly;
 }
 
 .hide {
@@ -47,21 +50,26 @@
 .float {
     float: left;
 }
+
 /* App specific */
 html, body {
     margin: 0;
     padding: 0;
     font-family: Verdana, Geneva, Tahoma, sans-serif;
     background-color: var(--white);
+    height: 100%; /* Make sure body takes full height */
 }
 
 .container {
     width: 100%;
     position: relative;
+    min-height: 100vh; /* Ensures container takes full height */
+    display: flex;
+    flex-direction: column;
 }
 
 .page-header, .page-footer {
-    background-color: var(--black);
+    background-color: var(--deep-red);
     color: var(--white);
     padding: 1rem;
 }
@@ -69,10 +77,7 @@ html, body {
 .page-title {
     margin: 0;
     text-align: center;
-}
-
-ion-icon {
-    vertical-align: middle;
+    color : rgb(235, 183, 183);
 }
 
 ul {
@@ -82,9 +87,8 @@ ul {
 
 main {
     padding: 1rem 2rem;
+    flex-grow: 1; /* Ensures main content fills remaining space */
 }
-
-
 
 #map {
     width: 100%;
@@ -107,97 +111,14 @@ main {
     margin: 1rem;
 }
 
-.box h2, .box figure {
-    margin: 0;
-    padding: 0;
-
-
-}
-
-.box table {
-    width: 100%;
-    text-align: center;
-    border: var(--grey) solid 1px;
-    border-radius: 4px;
-}
-
-.box li {
-    width: calc(50% - 0.6rem);
-    text-align: center;
-    border: var(--grey) solid 1px;
-    box-sizing: border-box;
-    padding: 0.3rem;
-    margin: 0.3rem;
-}
-
-.box img {
-    height: 3rem;
-}
-
-.goal {
-    background-image: url("../img/splatter.png");
-    background-size: contain;
-    background-repeat: no-repeat;
-    padding: 9rem 7rem;
-    position: absolute;
-    bottom: 30%;
-    filter: drop-shadow(0 0 30px #333);
-    transform: rotate(340deg);
-    line-height: 1rem;
-}
-
-.goal h2, .goal p {
-    margin: 0.5rem;
-}
-
-#player-modal{
-    width: 100vw;
-    height: 100vh;
-    background-color: rgb(0, 0, 0, 0.8);
-    position: absolute;
-    top: 0;
-}
-
-#player-form {
-    display: flex;
-    width: 50%;
-    margin: 4rem auto;
-    flex-direction: column;
-}
-
-#player-form input {
-    padding: 1rem;
-}
-
-.done {
-    background-color: var(--grey );
-}
-
-#weather {
-    border-spacing: 0;
-}
-
-#weather td {
-    padding: 0.3rem;
-}
-
 .page-footer {
     text-align: center;
-}
-
-#weather td:first-child, #weather td:nth-child(2) {
-    border-right: var(--grey) 1px solid;
-}
-
-.lead-img {
-    width: 100%;
-    margin: 0 0 1rem 0;
+    margin-top: auto; /* Ensures footer is at the bottom */
 }
 
 @media screen and (min-width: 769px) {
     .boxes {
         font-size: initial;
-
     }
 
     #map {
@@ -206,10 +127,34 @@ main {
     }
 
     .boxes {
-         width: 55%;
+        width: 55%;
         padding-left: 1rem;
         box-sizing: border-box;
-
     }
+}
 
+/* Yleiset taulun tyylit */
+table.task-table {
+  width: 100%;
+  border-collapse: collapse; /* Poistaa tupla-rajat */
+  margin: 20px 0;
+}
+
+table.task-table th, table.task-table td {
+  padding: 10px;
+  text-align: left;
+  font-size: 16px;
+  border: 1px solid #ddd;
+}
+
+.blue-icon {
+  background-color: #2474ff;
+  border-radius: 50%;
+  border: 5px solid rgba(255, 255, 255, 0.5);
+}
+
+.green-icon {
+  background-color: #27ba35;
+  border-radius: 50%;
+  border: 5px solid rgba(255, 255, 255, 0.5);
 }
