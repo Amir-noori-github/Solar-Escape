@@ -22,7 +22,7 @@ def get_db_connection():
         port=3306,
         database='flight_game',
         user='root',
-        password='3452',
+        password='salasana',
         autocommit=True,
         collation='utf8mb4_general_ci'
     )
