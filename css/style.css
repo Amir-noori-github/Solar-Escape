@@ -158,3 +158,62 @@ table.task-table th, table.task-table td {
   border-radius: 50%;
   border: 5px solid rgba(255, 255, 255, 0.5);
 }
+/* Modalin tyyli */
+#player-modal {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background-color: #fff;
+    padding: 20px;
+    border-radius: 10px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+    z-index: 1000;
+    text-align: center; /* Keskittää tekstin ja sisältöelementit modalissa */
+    width: 300px;
+}
+
+/* Lomakkeen tyyli */
+#player-form {
+    display: flex;
+    flex-direction: column; /* Asettaa lomakkeen elementit pystysuuntaan */
+    align-items: center; /* Keskittää elementit vaakasuunnassa */
+    gap: 15px; /* Lisää väliä tekstikentän ja painikkeen välille */
+}
+
+/* Syötekentän tyyli */
+#player-input {
+    padding: 10px;
+    font-size: 16px;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+    width: 90%; /* Asettaa syötekentän leveydeksi 90% modalista */
+    max-width: 250px; /* Maksimileveys syötekentälle */
+    text-align: center; /* Keskittää tekstin syötekentässä */
+}
+
+/* Painikkeen tyyli */
+#player-form button {
+    padding: 10px 20px;
+    font-size: 16px;
+    background-color: #007bff;
+    color: #fff;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+}
+
+#player-form button:hover {
+    background-color: #0056b3;
+}
+/* Piilota oletuksena */
+#player-modal,
+.modal-backdrop {
+    display: none;
+}
+
+/* Näytä modal ja tausta, kun "show"-luokka on käytössä */
+#player-modal.show,
+.modal-backdrop.show {
+    display: block;
+}
