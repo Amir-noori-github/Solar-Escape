@@ -9,12 +9,23 @@ L.tileLayer('https://{s}.google.com/vt/lyrs=s&x={x}&y={y}&z={z}', {
 map.setView([60, 24], 7);
 
 // global variables
+const apiUrl = 'http://127.0.0.1:5000/';
+const startLoc = 'EFHK';
+const globalGoals = [];
+const airportMarkers = L.featureGroup().addTo(map);
+
 
 // icons
 const blueIcon = L.divIcon({ className: 'blue-icon' });
 const greenIcon = L.divIcon({ className: 'green-icon' });
 
 // form for player name
+document.querySelector('#player-form').addEventListener('submit', function (evt) {
+  evt.preventDefault();
+  const playerName = document.querySelector('#player-input').value;
+  document.querySelector('#player-modal').classList.add('hide');
+  gameSetup(`${apiUrl}newgame?player=${playerName}&loc=${startLoc}`);
+});
 
 // function to fetch data from API
 async function getData(url) {
@@ -24,6 +35,12 @@ async function getData(url) {
   return data;
 }
 // function to update game status
+function updateStatus(status) {
+     document.querySelector('#player-name').innerHTML = `Player: ${status.name}`;
+     document.querySelector('#current-location').innerHTML = status.locations.find(loc => loc.active).name;
+     document.querySelector('#player-distance').innerHTML = `${status.remaining_distance} km`;
+     document.querySelector('#player-time').innerHTML = `${status.remaining_time} min`;
+}
 
 
 // function to show weather at selected airport
@@ -35,7 +52,7 @@ async function getData(url) {
 
 // function to set up game
 // this is the main function that creates the game and calls the other functions
-async  function gameSetup () {
+async  function gameSetup (url) {
     try {
         const gameData = await getData('testdata/newgame.json');
         console.log(gameData);
