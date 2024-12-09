@@ -1,4 +1,5 @@
 'use strict';
+let playerName; // Globaali muuttuja pelaajan nimeä varten
 
 // Alustetaan kartta käyttämällä Leaflet-kirjastoa
 const map = L.map('map', { tap: false });
@@ -9,7 +10,7 @@ L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
 map.setView([60, 24], 7); // Keskitetään Suomeen
 
 // Globaalit muuttujat
-const apiUrl = 'http://127.0.0.1:5000/';
+const apiUrl = 'http://127.0.0.1:3000/';
 const startLoc = 'EFHK'; // Oletuskenttä Helsinki-Vantaa
 const airportMarkers = L.featureGroup().addTo(map); // Markkerien ryhmä
 
@@ -21,8 +22,8 @@ const greenIcon = L.divIcon({ className: 'green-icon' });
 document.querySelector('#player-form').addEventListener('submit', function (evt) {
     evt.preventDefault();
 
-    const playerName = document.querySelector('#player-input').value.trim();
-
+    playerName = document.querySelector('#player-input').value; // Päivitetään globaali muuttuja
+    document.getElementById('player-name').textContent = playerName;
     if (playerName) {
         // Suljetaan modaalinen ikkuna
         closeModal();
@@ -55,7 +56,7 @@ async function getData(url) {
         alert('Failed to fetch data from server. Please try again.');
         throw error;
     }
-}
+}   console.log("GetData");
 
 // Päivittää pelaajan tilatiedot UI:ssa
 function updateGameStatus(status) {
@@ -68,24 +69,27 @@ function updateGameStatus(status) {
 // Pelin alustus ja kartan asetukset
 async function gameSetup(playerUrl) {
     try {
-        airportMarkers.clearLayers(); // Tyhjennetään markkerit
+        airportMarkers.clearLayers(); // Tyhjennetään vanhat markkerit
 
-        const gameData = await getData(playerUrl);
+        const gameData = await getData(playerUrl); // Haetaan pelin tila
         console.log('Game data received:', gameData);
 
-        updateGameStatus(gameData);
+        updateGameStatus(gameData); // Päivitetään oikean laidan tilatiedot
 
+        // Lisätään uudet markkerit
         for (let airport of gameData.locations) {
-            const marker = L.marker([airport.latitude, airport.longitude]).addTo(airportMarkers);
+            const marker = L.marker([airport.latitude, airport.longitude]);
 
             if (airport.active) {
                 marker.setIcon(greenIcon);
                 marker.bindPopup(`You are here: <b>${airport.name}</b>`).openPopup();
             } else {
                 marker.setIcon(blueIcon);
-                const popupContent = createAirportPopup(airport, gameData.player);
+                const popupContent = createAirportPopup(airport);
                 marker.bindPopup(popupContent);
             }
+
+            airportMarkers.addLayer(marker); // Lisätään markkeri markkeriryhmään
         }
 
         // Sovitetaan kartta kaikkien markkerien ympärille
@@ -98,7 +102,7 @@ async function gameSetup(playerUrl) {
 }
 
 // Luo lentokentän popup-sisällön
-function createAirportPopup(airport, playerName) {
+function createAirportPopup(airport) {
     const popupContent = document.createElement('div');
     popupContent.classList.add('popup-content');
 
@@ -107,14 +111,18 @@ function createAirportPopup(airport, playerName) {
     popupContent.appendChild(h4);
 
     const p = document.createElement('p');
-    p.textContent = `Distance: ${airport.distance} km`;
+    p.textContent = `Distance: ${airport.distance.toFixed(2)} km`;
     popupContent.appendChild(p);
 
     const goButton = document.createElement('button');
     goButton.classList.add('fly-button');
     goButton.textContent = 'Fly here';
     goButton.addEventListener('click', function () {
-        const flyUrl = `${apiUrl}flyto?player=${encodeURIComponent(playerName)}&dest=${encodeURIComponent(airport.icao)}`;
+        if (!playerName) {
+            alert('Player name is not set. Please start the game again.');
+            return;
+        }
+        const flyUrl = `${apiUrl}flyto?player=${encodeURIComponent(playerName)}&dest=${encodeURIComponent(airport.id)}`;
         flyToAirport(flyUrl);
     });
     popupContent.appendChild(goButton);
@@ -125,21 +133,20 @@ function createAirportPopup(airport, playerName) {
 // Lentää valittuun lentokenttään
 async function flyToAirport(flyUrl) {
     try {
-        showLoading(true); // Näytetään latausanimaatio
-        const gameData = await getData(flyUrl);
+        const gameData = await getData(flyUrl); // Päivitetään lentotiedot
         console.log('Updated game data:', gameData);
 
-        updateGameStatus(gameData);
+        updateGameStatus(gameData); // Päivitetään oikean laidan tiedot
 
-        const gameUrl = `${apiUrl}game?player=${encodeURIComponent(gameData.player)}`;
+        // Päivitetään kartta uusilla markkereilla
+        const gameUrl = `${apiUrl}game?player=${encodeURIComponent(playerName)}`;
         gameSetup(gameUrl);
     } catch (error) {
         console.error('Error flying to airport:', error);
         alert('Flight failed. Please try again.');
-    } finally {
-        showLoading(false); // Piilotetaan latausanimaatio
     }
 }
+
 
 // Näyttää tai piilottaa latausviestin
 function showLoading(isLoading) {

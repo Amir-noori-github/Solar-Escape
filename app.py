@@ -9,7 +9,7 @@ def create_app():
     app = Flask(__name__)
     CORS(app)
     app.config['CORS_HEADERS'] = 'Content-Type'
-    app.secret_key = 'your_secret_key'  # Replace with a strong secret key
+    app.secret_key = 'salasana'  # Replace with a strong secret key
 
     # Register routes blueprint
     app.register_blueprint(routes, url_prefix='/')
@@ -50,12 +50,13 @@ def new_game():
     session['visited_airports'] = [start_location]
     session['remaining_time'] = 420  # 420 minutes
     session['player_distance'] = 3000  # 3000 km
+    session['remaining_distance'] = session['player_distance']  # Lisää tämä
     session['goal_airport'] = random.choice(['EFIV', 'EFOU', 'EFKS', 'EFKT', 'EFKE'])
 
     game_data = {
         "name": player_name,
         "remaining_time": session['remaining_time'],
-        "remaining_distance": session['player_distance'],
+        "remaining_distance": session['remaining_distance'],  # Päivitä myös tähän
         "locations": get_initial_locations(start_location),
         "goal_airport": session['goal_airport'],
     }
@@ -65,14 +66,12 @@ def new_game():
 # Fly to a new airport
 @routes.route('/flyto', methods=['GET'])
 def fly_to():
+    print(session)  # Debug: Tulosta session sisältö
     player = request.args.get('player')
     destination_id = request.args.get('dest')
 
     if not player or not destination_id:
         return jsonify({"error": "Missing player or destination parameters."}), 400
-
-    if player != session.get('player_name'):
-        return jsonify({"error": "Invalid player session."}), 403
 
     connection = get_db_connection()
     try:
@@ -81,30 +80,34 @@ def fly_to():
         if not destination:
             return jsonify({"error": "Destination airport not found."}), 404
 
-        current_airport = session['current_airport']
+        current_airport = session.get('current_airport')
+        print(current_airport)  # Debug: Tulosta nykyinen lentokenttä
         distance_to_airport = calculate_distance_from_start(current_airport, destination)
 
-        if session['remaining_distance'] < distance_to_airport:
+        # Tarkista, onko pelaajalla riittävästi matkaa jäljellä
+        if session.get('remaining_distance', 0) < distance_to_airport:
             return jsonify({"error": "Not enough remaining distance to travel."}), 400
 
+        # Tarkista, onko pelaajalla riittävästi aikaa jäljellä
         flight_time = calculate_flight_time(distance_to_airport)
-        if session['remaining_time'] < flight_time:
+        if session.get('remaining_time', 0) < flight_time:
             return jsonify({"error": "Not enough remaining time to travel."}), 400
 
-        # Update session variables
+        # Päivitä session muuttujat
         session['remaining_distance'] -= distance_to_airport
         session['remaining_time'] -= flight_time
         session['current_airport'] = destination_id
         session['visited_airports'].append(destination_id)
 
+        # Tarkista, onko pelaaja saavuttanut tavoitekentän
         if session['current_airport'] == session['goal_airport']:
             return jsonify({"message": "Congratulations! You reached your goal airport.", "status": "victory"}), 200
 
-        # Prepare game data for the response
+        # Valmistele pelin tilatiedot vastaukseen
         game_data = {
             "name": session['player_name'],
             "remaining_time": session['remaining_time'],
-            "remaining_distance": session['player_distance'],
+            "remaining_distance": session['remaining_distance'],
             "current_location": session['current_airport'],
             "locations": get_initial_locations(session['current_airport']),
             "goal_airport": session['goal_airport'],
@@ -197,4 +200,5 @@ def calculate_flight_time(distance_km):
 # Run the Flask app
 if __name__ == '__main__':
     app = create_app()
-    app.run(debug=True, host='127.0.0.1', port=5000)
+    app.run(debug=True, host='127.0.0.1', port=3000)
+
