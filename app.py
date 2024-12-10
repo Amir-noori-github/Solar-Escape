@@ -30,6 +30,10 @@ routes = Blueprint('routes', __name__)
 def index():
     return render_template('index.html')
 
+@routes.route('/about')
+def about():
+    return render_template('about.html')
+
 # Hakee kaikki Suomen keskisuuret ja suuret lentokentät tietokannasta ja palauttaa ne JSON-muodossa.
 @routes.route('/airports', methods=['GET'])
 def get_all_airports():
