@@ -25,7 +25,7 @@
             <nav>
                 <ul class="flex-wrap space-evenly">
                     <li>
-                        <a class="button button-white" href="index.html">Game</a>
+                        <a class="button button-white" href="/">Game</a>
                     </li>
                     <li>
                         <a class="button button-white" href="about.html">About</a>
@@ -87,14 +87,15 @@
     </div>
 
     <!-- Modal for Player Name Input -->
-    <div id="player-modal" class="show">
-        <form id="player-form">
-            <label for="player-input">Enter your name:</label>
-            <input id="player-input" type="text" placeholder="Player name" required />
-            <button type="submit">Start Game</button>
-        </form>
-    </div>
-    <div class="modal-backdrop show"></div>
+   <div id="player-modal" class="modal show">
+    <form id="player-form">
+        <label for="player-input">Enter your name:</label>
+        <input id="player-input" type="text" placeholder="Player name" required />
+        <button type="submit">Start Game</button>
+    </form>
+</div>
+<div class="modal-backdrop show"></div>
+
 </body>
 
 </html>
