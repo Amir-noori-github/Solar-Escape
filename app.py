@@ -63,7 +63,6 @@ def new_game():
     connection = get_db_connection()
     try:
         cursor = connection.cursor(dictionary=True)
-        # Hae aloitussijainnin tiedot
         cursor.execute("""
             SELECT name, latitude_deg, longitude_deg 
             FROM airport 
@@ -74,16 +73,14 @@ def new_game():
         if not start_airport:
             return jsonify({"error": "Starting location not found."}), 404
 
-        # Hae kaikki lentokentät
         cursor.execute("""
             SELECT ident 
             FROM airport 
             WHERE iso_country = 'FI' AND type IN ('medium_airport', 'large_airport')
         """)
         all_airports = [airport['ident'] for airport in cursor.fetchall()]
-        session['goal_airports'] = random.sample(all_airports, 5)  # Asetetaan 5 suojapaikkaa
+        session['goal_airports'] = random.sample(all_airports, 5)
 
-        # Alustetaan pelin muuttujat
         session.update({
             'player_name': player_name,
             'current_airport': start_location,
@@ -92,14 +89,13 @@ def new_game():
             'remaining_distance': 5000
         })
 
-        # Palauta pelidatan aloitustila
         return jsonify({
             "name": player_name,
             "remaining_time": session['remaining_time'],
             "remaining_distance": session['remaining_distance'],
-            "current_location": start_airport['name'],  # Palauta lentokentän nimi
-            "locations": get_airports_with_distances(start_location),
-            "goal_airports": session['goal_airports']  # Palauta suojapaikkojen tunnisteet
+            "current_location": start_airport['name'],
+            "locations": get_airports_with_distances(start_location),  # Tämä palauttaa vain 5 lähintä lentokenttää
+            "goal_airports": session['goal_airports']
         }), 200
     finally:
         connection.close()
@@ -207,16 +203,21 @@ def get_airports_with_distances(start_location):
         airports = cursor.fetchall()
         start_coords = get_airport_coordinates(start_location)
 
-        # Add distance to each airport
-        return [{
+        # Lisää etäisyys kaikkiin lentokenttiin
+        airports_with_distances = [{
             "id": airport['ident'],
             "name": airport['name'],
             "latitude": airport['latitude_deg'],
             "longitude": airport['longitude_deg'],
             "distance": calculate_distance(start_coords, (airport['latitude_deg'], airport['longitude_deg'])).km
         } for airport in airports]
+
+        # Järjestä etäisyyden mukaan ja ota 5 lähintä
+        nearest_airports = sorted(airports_with_distances, key=lambda x: x['distance'])[:6]
+        return nearest_airports
     finally:
         connection.close()
+
 
 # Helper function to get coordinates of an airport by ID
 def get_airport_coordinates(airport_id):
