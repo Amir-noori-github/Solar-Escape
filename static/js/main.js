@@ -54,6 +54,7 @@ function setupModalHandler() {
 // Päivittää pelaajan tiedot käyttöliittymässä
 function paivitaPelitilanne(tila) {
     document.querySelector('#current-location').textContent = tila.current_location || 'Tuntematon'; // Nykyinen sijainti
+    document.querySelector('#bunkers_found').textContent = `${totalBunkers - tila.goal_airports.length}/${totalBunkers}`; // Päivitä suojapaikkalaskuri
 
     // Pyöristetään jäljellä oleva etäisyys ja aika 0 desimaaliin
     const pyoristettuEtaisyys = tila.remaining_distance ? parseFloat(tila.remaining_distance).toFixed(0) : '0';
@@ -62,12 +63,6 @@ function paivitaPelitilanne(tila) {
     // Päivitetään käyttöliittymän arvot
     document.querySelector('#player-distance').textContent = `${pyoristettuEtaisyys} km`; // Jäljellä oleva etäisyys
     document.querySelector('#player-time').textContent = `${pyoristettuAika} h`; // Jäljellä oleva aika tunneissa
-
-    // Tarkista, onko aika tai etäisyys loppunut
-    if (tila.remaining_time <= 0 || tila.remaining_distance <= 0) {
-        alert('Aika tai etäisyys on loppunut! Peli käynnistyy uudelleen.');
-        avaaModal(); // Näytä modal uudelleen pelin aloitusta varten
-    }
 }
 
 // Pelin alustus ja API-kutsu
@@ -98,14 +93,22 @@ async function asetaKartta(pelidata) {
     // Lisätään markkerit kartalle
     pelidata.locations.forEach(lentokentta => {
         if (lentokentta.latitude && lentokentta.longitude) {
-            const marker = L.marker([lentokentta.latitude, lentokentta.longitude]); // Luodaan markkeri
+            // Tarkistetaan, onko tämä pelaajan nykyinen sijainti
+            const isCurrentLocation = lentokentta.name === pelidata.current_location;
+
+            const marker = L.circleMarker([lentokentta.latitude, lentokentta.longitude], {
+                color: isCurrentLocation ? 'green' : 'blue', // Vihreä nykyiselle sijainnille, sininen muille
+                radius: isCurrentLocation ? 10 : 6, // Suurempi koko nykyiselle sijainnille
+                fillOpacity: 0.8
+            });
+
             marker.addTo(airportMarkers); // Lisätään markkeri ryhmään
 
             // Popup-ikkuna ja "Fly here" -painike
             marker.bindPopup(`
                 <b>${lentokentta.name}</b><br>
-                Etäisyys: ${lentokentta.distance ? lentokentta.distance.toFixed(2) : "N/A"} km<br>
-                <button onclick="lennäLentokentälle('${lentokentta.id}')">Lennä tänne</button>
+                Distance: ${lentokentta.distance ? lentokentta.distance.toFixed(2) : "N/A"} km<br>
+                ${!isCurrentLocation ? `<button onclick="lennäLentokentälle('${lentokentta.id}')">Fly here</button>` : ""}
             `);
         } else {
             console.warn("Lentokentältä puuttuu koordinaatit:", lentokentta);
@@ -120,29 +123,6 @@ async function asetaKartta(pelidata) {
     }
 }
 
-
-// Lentotoiminnon API-kutsu
-async function lennäLentokentälle(kohdeId) {
-    try {
-        const vastaus = await fetch(`${apiUrl}flyto?dest=${kohdeId}`);
-        const pelidata = await vastaus.json();
-
-        if (pelidata.status === 'goal') {
-            alert('Saavutit suojatun alueen! Jatka etsimistä.');
-        } else if (pelidata.status === 'victory') {
-            alert('Onnittelut! Löysit kaikki suojatut alueet.');
-            avaaModal(); // Peli alkaa alusta
-        } else if (pelidata.status === 'restart') {
-            alert(pelidata.message);
-            avaaModal();
-        }
-
-        asetaKartta(pelidata);
-    } catch (virhe) {
-        console.error('Virhe lentämisessä:', virhe);
-        alert('Lentotoiminto epäonnistui. Yritä uudelleen.');
-    }
-}
 // Modalin avaamisen apufunktio
 function avaaModal() {
     const modal = document.querySelector('#player-modal');
@@ -177,9 +157,9 @@ async function lennäLentokentälle(kohdeId) {
         if (pelidata.status === 'goal') {
             foundBunkers++; // Lisätään löydetty suojapaikka
             paivitaSuojapaikkaLaskuri(); // Päivitetään laskuri käyttöliittymässä
-            alert('Saavutit suojatun alueen! Jatka etsimistä.');
+            alert('You found a protected area! Keep going!');
         } else if (pelidata.status === 'victory') {
-            alert('Onnittelut! Löysit kaikki suojatut alueet.');
+            alert('You found all protected areas! Game Over. Congratulations!');
             avaaModal(); // Peli alkaa alusta
         } else if (pelidata.status === 'restart') {
             alert(pelidata.message); // Näytetään käyttäjälle viesti

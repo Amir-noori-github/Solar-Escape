@@ -81,7 +81,7 @@ def new_game():
             WHERE iso_country = 'FI' AND type IN ('medium_airport', 'large_airport')
         """)
         all_airports = [airport['ident'] for airport in cursor.fetchall()]
-        session['goal_airports'] = random.sample(all_airports, 5)
+        session['goal_airports'] = random.sample(all_airports, 5)  # Asetetaan 5 suojapaikkaa
 
         # Alustetaan pelin muuttujat
         session.update({
@@ -98,7 +98,8 @@ def new_game():
             "remaining_time": session['remaining_time'],
             "remaining_distance": session['remaining_distance'],
             "current_location": start_airport['name'],  # Palauta lentokentän nimi
-            "locations": get_airports_with_distances(start_location)
+            "locations": get_airports_with_distances(start_location),
+            "goal_airports": session['goal_airports']  # Palauta suojapaikkojen tunnisteet
         }), 200
     finally:
         connection.close()
@@ -136,12 +137,13 @@ def fly_to():
             session['remaining_distance'] = 3000
             session['visited_airports'] = []
             return jsonify({
-                "message": "Time or distance is insufficient. Restarting game.",
+                "message": "Time or distance is insufficient. You lost. Restarting game.",
                 "status": "restart",
                 "remaining_time": session['remaining_time'],
                 "remaining_distance": session['remaining_distance'],
                 "current_location": session['current_airport'],  # Jätetään nimi pois
-                "locations": get_airports_with_distances(session['current_airport'])
+                "locations": get_airports_with_distances(session['current_airport']),
+                "goal_airports": session['goal_airports']  # Suojapaikat säilyvät
             }), 200
 
         # Päivitä pelitilanne
@@ -150,14 +152,39 @@ def fly_to():
         session['current_airport'] = destination_id
         session['visited_airports'].append(destination_id)
 
+        # Tarkistetaan, onko nykyinen lentokenttä suojapaikka
+        if destination_id in session['goal_airports']:
+            session['goal_airports'].remove(destination_id)  # Poistetaan löydetty suojapaikka
+            if len(session['goal_airports']) == 0:  # Jos kaikki suojapaikat löytyneet
+                return jsonify({
+                    "message": "You found all protected areas! Game Over. Congratulations!",
+                    "status": "victory",
+                    "remaining_time": session['remaining_time'],
+                    "remaining_distance": session['remaining_distance'],
+                    "current_location": destination['name'],
+                    "locations": get_airports_with_distances(destination_id)
+                }), 200
+            else:
+                return jsonify({
+                    "message": f"You found a protected area: {destination['name']}. Keep going!",
+                    "status": "goal",
+                    "remaining_time": session['remaining_time'],
+                    "remaining_distance": session['remaining_distance'],
+                    "current_location": destination['name'],
+                    "locations": get_airports_with_distances(destination_id),
+                    "goal_airports": session['goal_airports']
+                }), 200
+
         return jsonify({
             "remaining_time": session['remaining_time'],
             "remaining_distance": session['remaining_distance'],
-            "current_location": destination['name'],  # Palauta lentokentän nimi
-            "locations": get_airports_with_distances(destination_id)
+            "current_location": destination['name'],
+            "locations": get_airports_with_distances(destination_id),
+            "goal_airports": session['goal_airports']
         }), 200
     finally:
         connection.close()
+
 
 # Helper function to get airport details by ID
 def get_airport_by_id(connection, airport_id):
