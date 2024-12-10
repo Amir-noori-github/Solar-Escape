@@ -84,26 +84,42 @@ async function aloitaPeli() {
 
 // Lentokenttien markkerien luonti ja pelin UI:n asettaminen
 async function asetaKartta(pelidata) {
-    airportMarkers.clearLayers(); // Tyhjennetään vanhat markkerit
-    paivitaPelitilanne(pelidata); // Päivitetään pelaajan tilanne UI:hin
+    console.log("Pelidata saapui karttaan:", pelidata); // Debug: Tulostetaan pelidata
 
-    // Lisätään lentokentät kartalle
+    // Tyhjennetään vanhat markkerit
+    airportMarkers.clearLayers();
+    paivitaPelitilanne(pelidata); // Päivitetään pelaajan tilanne käyttöliittymään
+
+    if (!pelidata.locations || pelidata.locations.length === 0) {
+        console.error("Ei lentokenttiä näytettäväksi!");
+        return; // Ei jatketa, jos ei ole lentokenttiä
+    }
+
+    // Lisätään markkerit kartalle
     pelidata.locations.forEach(lentokentta => {
-        const marker = L.marker([lentokentta.latitude, lentokentta.longitude]); // Luodaan markkeri
-        marker.addTo(airportMarkers); // Lisätään markkeri ryhmään
+        if (lentokentta.latitude && lentokentta.longitude) {
+            const marker = L.marker([lentokentta.latitude, lentokentta.longitude]); // Luodaan markkeri
+            marker.addTo(airportMarkers); // Lisätään markkeri ryhmään
 
-        // Popup-ikkuna ja "Fly here" -painike
-        marker.bindPopup(`
-            <b>${lentokentta.name}</b><br>
-            Etäisyys: ${lentokentta.distance.toFixed(2)} km<br>
-            <button onclick="lennäLentokentälle('${lentokentta.id}')">Lennä tänne</button>
-        `);
+            // Popup-ikkuna ja "Fly here" -painike
+            marker.bindPopup(`
+                <b>${lentokentta.name}</b><br>
+                Etäisyys: ${lentokentta.distance ? lentokentta.distance.toFixed(2) : "N/A"} km<br>
+                <button onclick="lennäLentokentälle('${lentokentta.id}')">Lennä tänne</button>
+            `);
+        } else {
+            console.warn("Lentokentältä puuttuu koordinaatit:", lentokentta);
+        }
     });
 
+    // Sovitetaan kartta markkereiden ympärille, jos niitä on
     if (airportMarkers.getBounds().isValid()) {
-        map.fitBounds(airportMarkers.getBounds()); // Sovitetaan kartta markkereiden ympärille
+        map.fitBounds(airportMarkers.getBounds());
+    } else {
+        console.error("Markkereita ei lisätty kartalle!");
     }
 }
+
 
 // Lentotoiminnon API-kutsu
 async function lennäLentokentälle(kohdeId) {
@@ -117,11 +133,11 @@ async function lennäLentokentälle(kohdeId) {
             alert('Onnittelut! Löysit kaikki suojatut alueet.');
             avaaModal(); // Peli alkaa alusta
         } else if (pelidata.status === 'restart') {
-            alert(pelidata.message); // Kullanıcıya mesaj göster
-            avaaModal(); // Modal yeniden açılır
+            alert(pelidata.message);
+            avaaModal();
         }
 
-        asetaKartta(pelidata); // Kartta ve UI päivitetään
+        asetaKartta(pelidata);
     } catch (virhe) {
         console.error('Virhe lentämisessä:', virhe);
         alert('Lentotoiminto epäonnistui. Yritä uudelleen.');

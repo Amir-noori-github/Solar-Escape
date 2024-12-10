@@ -4,12 +4,11 @@ import random
 import mysql.connector
 from flask_cors import CORS
 
-# Flask uygulamasını başlatan fonksiyon
 def create_app():
     app = Flask(__name__)
-    CORS(app)  # Allow Cross-Origin Resource Sharing
-    app.secret_key = 'salasana'  # Secret key for session management
-    app.register_blueprint(routes, url_prefix='/')  # Register routes
+    CORS(app)
+    app.secret_key = 'salasana'
+    app.register_blueprint(routes, url_prefix='/')
     return app
 
 def get_db_connection():
@@ -26,13 +25,14 @@ def get_db_connection():
 # Blueprint for route definitions
 routes = Blueprint('routes', __name__)
 
+# Palauttaa sovelluksen aloitussivun renderöimällä index.html-mallin.
 @routes.route('/')
 def index():
     return render_template('index.html')
 
+# Hakee kaikki Suomen keskisuuret ja suuret lentokentät tietokannasta ja palauttaa ne JSON-muodossa.
 @routes.route('/airports', methods=['GET'])
 def get_all_airports():
-    """Fetch all medium and large airports in Finland."""
     connection = get_db_connection()
     try:
         cursor = connection.cursor(dictionary=True)
@@ -46,69 +46,87 @@ def get_all_airports():
     finally:
         connection.close()
 
-
+# Alustaa uuden pelisession hakemalla pelaajan nimen ja aloituspaikan, tarkistamalla tiedot ja palauttamalla pelin alkutilan.
 @routes.route('/newgame', methods=['GET'])
 def new_game():
     """Initialize a new game session."""
-    player_name = request.args.get('player')  # Player's name
-    start_location = request.args.get('loc')  # Starting airport
+    player_name = request.args.get('player')
+    start_location = request.args.get('loc')
 
-    # Validate inputs
     if not player_name or not start_location:
         return jsonify({"error": "Missing player or location parameters."}), 400
 
-    # Fetch all eligible airports from the database to select random protected areas
     connection = get_db_connection()
     try:
         cursor = connection.cursor(dictionary=True)
+        # Hae aloitussijainnin tiedot
+        cursor.execute("""
+            SELECT name, latitude_deg, longitude_deg 
+            FROM airport 
+            WHERE ident = %s
+        """, (start_location,))
+        start_airport = cursor.fetchone()
+
+        if not start_airport:
+            return jsonify({"error": "Starting location not found."}), 404
+
+        # Hae kaikki lentokentät
         cursor.execute("""
             SELECT ident 
             FROM airport 
             WHERE iso_country = 'FI' AND type IN ('medium_airport', 'large_airport')
         """)
         all_airports = [airport['ident'] for airport in cursor.fetchall()]
-        session['goal_airports'] = random.sample(all_airports, 5)  # Randomly select 5 airports as protected areas
+        session['goal_airports'] = random.sample(all_airports, 5)
+
+        # Alustetaan pelin muuttujat
+        session.update({
+            'player_name': player_name,
+            'current_airport': start_location,
+            'visited_airports': [start_location],
+            'remaining_time': 600,
+            'remaining_distance': 5000
+        })
+
+        # Palauta pelidatan aloitustila
+        return jsonify({
+            "name": player_name,
+            "remaining_time": session['remaining_time'],
+            "remaining_distance": session['remaining_distance'],
+            "current_location": start_airport['name'],  # Palauta lentokentän nimi
+            "locations": get_airports_with_distances(start_location)
+        }), 200
     finally:
         connection.close()
 
-    # Initialize game session variables
-    session.update({
-        'player_name': player_name,
-        'current_airport': start_location,
-        'visited_airports': [start_location],
-        'remaining_time': 600,  # 600 minutes to complete the game
-        'remaining_distance': 5000  # 5000 km to complete the game
-    })
-
-    # Return the initial game state
-    return jsonify({
-        "name": player_name,
-        "remaining_time": session['remaining_time'],
-        "remaining_distance": session['remaining_distance'],
-        "current_location": session['current_airport'],
-        "locations": get_airports_with_distances(start_location)
-    }), 200
-
+# Hallinnoi lentoa uuteen lentokenttään, päivittää pelin tilan ja palauttaa ajankohtaisen sijainnin sekä jäljellä olevan ajan ja etäisyyden
 @routes.route('/flyto', methods=['GET'])
 def fly_to():
     """Handle flight to a new airport and update the game state."""
-    destination_id = request.args.get('dest')  # Target destination ID
+    destination_id = request.args.get('dest')
 
     if not destination_id:
         return jsonify({"error": "Destination airport not provided."}), 400
 
     connection = get_db_connection()
     try:
-        # Fetch details of the destination airport
-        destination = get_airport_by_id(connection, destination_id)
+        # Hae kohdelentokentän tiedot
+        cursor = connection.cursor(dictionary=True)
+        cursor.execute("""
+            SELECT name, latitude_deg, longitude_deg 
+            FROM airport 
+            WHERE ident = %s
+        """, (destination_id,))
+        destination = cursor.fetchone()
+
         if not destination:
             return jsonify({"error": "Destination not found."}), 404
 
-        # Calculate distance and flight time
+        # Lasketaan matka ja aika
         distance = calculate_distance_from_start(session['current_airport'], destination)
         flight_time = calculate_flight_time(distance)
 
-        # Check if the player has enough time and distance left
+        # Tarkistetaan, riittävätkö aika ja matka
         if session['remaining_distance'] < distance or session['remaining_time'] < flight_time:
             session['remaining_time'] = 420
             session['remaining_distance'] = 3000
@@ -118,43 +136,20 @@ def fly_to():
                 "status": "restart",
                 "remaining_time": session['remaining_time'],
                 "remaining_distance": session['remaining_distance'],
-                "current_location": session['current_airport'],
+                "current_location": session['current_airport'],  # Jätetään nimi pois
                 "locations": get_airports_with_distances(session['current_airport'])
             }), 200
 
-        # Update game session
+        # Päivitä pelitilanne
         session['remaining_distance'] -= distance
         session['remaining_time'] -= flight_time
         session['current_airport'] = destination_id
         session['visited_airports'].append(destination_id)
 
-        # Check if the player reached a protected area
-        if destination_id in session['goal_airports']:
-            session['goal_airports'].remove(destination_id)
-            if len(session['goal_airports']) == 0:  # All protected airports found
-                return jsonify({
-                    "message": "You found all protected areas! Game Over. Congratulations!",
-                    "status": "victory",
-                    "remaining_time": session['remaining_time'],
-                    "remaining_distance": session['remaining_distance'],
-                    "current_location": session['current_airport'],
-                    "locations": get_airports_with_distances(destination_id)
-                }), 200
-            else:
-                return jsonify({
-                    "message": f"You found a protected area: {destination_id}. Keep going!",
-                    "status": "goal",
-                    "remaining_time": session['remaining_time'],
-                    "remaining_distance": session['remaining_distance'],
-                    "current_location": session['current_airport'],
-                    "locations": get_airports_with_distances(destination_id)
-                }), 200
-
-        # Return the updated game state
         return jsonify({
             "remaining_time": session['remaining_time'],
             "remaining_distance": session['remaining_distance'],
-            "current_location": session['current_airport'],
+            "current_location": destination['name'],  # Palauta lentokentän nimi
             "locations": get_airports_with_distances(destination_id)
         }), 200
     finally:
@@ -212,7 +207,7 @@ def calculate_distance_from_start(start_airport, destination_airport):
 def calculate_flight_time(distance_km):
     return (distance_km / 100) * 15  # 15 minutes per 100 km
 
-
+# Käynnistää Flask-sovelluksen paikallisessa kehitysympäristössä osoitteessa 127.0.0.1 ja portissa 3000
 if __name__ == '__main__':
     app = create_app()
     app.run(debug=True, host='127.0.0.1', port=3000)
