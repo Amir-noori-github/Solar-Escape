@@ -40,14 +40,14 @@
                     <header>
                         <h2>Game Information</h2>
                     </header>
-                    <table class="task-table">
+                    <table class="task-table" style="width: 100%; border-collapse: collapse;">
                         <tr>
-                            <td>Player Name</td>
-                            <td><span id="player-name">Empty</span></td>
+                            <td style="width: 50%; border: 1px solid #ddd; padding: 8px;">Player Name</td>
+                            <td style="width: 50%; border: 1px solid #ddd; padding: 8px;"><span id="player-name">Empty</span></td>
                         </tr>
                         <tr>
-                            <td>Difficulty</td>
-                            <td><span id="game-difficulty">Normal</span></td>
+                            <td style="width: 50%; border: 1px solid #ddd; padding: 8px;">Bunkers found</td>
+                            <td style="width: 50%; border: 1px solid #ddd; padding: 8px;"><span id="bunkers_found">0/5</span></td>
                         </tr>
                     </table>
                 </section>
@@ -55,10 +55,13 @@
                     <header>
                         <h2 id="airport-name">Your Mission</h2>
                     </header>
-                    <p>
-                        Welcome to the Solar Escape game! Your mission is to find a secret bunker located at an airport
-                        in northern Finland. Find it before time or fuel runs out!
-                    </p>
+                    <table class="task-table">
+                      <tr>
+                        <td>
+                            Welcome to the Solar Escape game! Your mission is to find the five secret bunkers located at airports
+                            somewhere in Finland. Find it before time or fuel runs out!</td>
+                      </tr>
+                    </table>
                 </section>
                 <section class="box">
                     <header>
@@ -66,16 +69,16 @@
                     </header>
                     <table class="task-table">
                         <tr>
-                            <td>Current Location:</td>
+                            <td>Current location:</td>
                             <td><span id="current-location">Helsinki</span></td>
                         </tr>
                         <tr>
-                            <td>Remaining Distance:</td>
-                            <td><span id="player-distance">100</span> km</td>
+                            <td>Remaining distance:</td>
+                            <td><span id="player-distance">100</span></td>
                         </tr>
                         <tr>
-                            <td>Remaining Time:</td>
-                            <td><span id="player-time">120</span> min</td>
+                            <td>Remaining time:</td>
+                            <td><span id="player-time">120</span></td>
                         </tr>
                     </table>
                 </section>

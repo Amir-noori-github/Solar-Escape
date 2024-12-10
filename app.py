@@ -12,14 +12,13 @@ def create_app():
     app.register_blueprint(routes, url_prefix='/')  # Register routes
     return app
 
-# Veritabanı bağlantısı kuran fonksiyon
 def get_db_connection():
     return mysql.connector.connect(
         host='127.0.0.1',
         port=3306,
-        database='solardata',
+        database='flight_game',
         user='root',
-        password='1234',
+        password='salasana',
         autocommit=True,
         collation='utf8mb4_general_ci'
     )
@@ -27,12 +26,10 @@ def get_db_connection():
 # Blueprint for route definitions
 routes = Blueprint('routes', __name__)
 
-# Ana sayfa route'u
 @routes.route('/')
 def index():
     return render_template('index.html')
 
-# Tüm havalimanlarını getiren API
 @routes.route('/airports', methods=['GET'])
 def get_all_airports():
     """Fetch all medium and large airports in Finland."""
@@ -49,7 +46,7 @@ def get_all_airports():
     finally:
         connection.close()
 
-# Yeni oyunu başlatan route
+
 @routes.route('/newgame', methods=['GET'])
 def new_game():
     """Initialize a new game session."""
@@ -79,8 +76,8 @@ def new_game():
         'player_name': player_name,
         'current_airport': start_location,
         'visited_airports': [start_location],
-        'remaining_time': 420,  # 420 minutes to complete the game
-        'remaining_distance': 3000  # 3000 km total travel distance allowed
+        'remaining_time': 600,  # 600 minutes to complete the game
+        'remaining_distance': 5000  # 5000 km to complete the game
     })
 
     # Return the initial game state
@@ -92,7 +89,6 @@ def new_game():
         "locations": get_airports_with_distances(start_location)
     }), 200
 
-# Yeni havalimanına uçmayı sağlayan route
 @routes.route('/flyto', methods=['GET'])
 def fly_to():
     """Handle flight to a new airport and update the game state."""
@@ -114,10 +110,9 @@ def fly_to():
 
         # Check if the player has enough time and distance left
         if session['remaining_distance'] < distance or session['remaining_time'] < flight_time:
-            # Oyunun sıfırlanması
-            session['remaining_time'] = 420  # Yeni süre
-            session['remaining_distance'] = 3000  # Yeni mesafe
-            session['visited_airports'] = []  # Ziyaret edilen havaalanlarının sıfırlanması
+            session['remaining_time'] = 420
+            session['remaining_distance'] = 3000
+            session['visited_airports'] = []
             return jsonify({
                 "message": "Time or distance is insufficient. Restarting game.",
                 "status": "restart",
@@ -217,7 +212,8 @@ def calculate_distance_from_start(start_airport, destination_airport):
 def calculate_flight_time(distance_km):
     return (distance_km / 100) * 15  # 15 minutes per 100 km
 
-# Flask uygulamasını çalıştır
+
 if __name__ == '__main__':
     app = create_app()
     app.run(debug=True, host='127.0.0.1', port=3000)
+
