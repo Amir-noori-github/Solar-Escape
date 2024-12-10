@@ -54,7 +54,6 @@ function setupModalHandler() {
 // Päivittää pelaajan tiedot käyttöliittymässä
 function paivitaPelitilanne(tila) {
     document.querySelector('#current-location').textContent = tila.current_location || 'Tuntematon'; // Nykyinen sijainti
-    document.querySelector('#bunkers_found').textContent = `${totalBunkers - tila.goal_airports.length}/${totalBunkers}`; // Päivitä suojapaikkalaskuri
 
     // Pyöristetään jäljellä oleva etäisyys ja aika 0 desimaaliin
     const pyoristettuEtaisyys = tila.remaining_distance ? parseFloat(tila.remaining_distance).toFixed(0) : '0';
@@ -123,43 +122,14 @@ async function asetaKartta(pelidata) {
     }
 }
 
-// Modalin avaamisen apufunktio
-function avaaModal() {
-    const modal = document.querySelector('#player-modal');
-    const backdrop = document.querySelector('.modal-backdrop');
-    if (modal) {
-        modal.style.display = 'block';
-        modal.classList.add('show');
-    }
-    if (backdrop) {
-        backdrop.style.display = 'block';
-        backdrop.classList.add('show');
-    }
-}
-// Suojapaikkalaskurin muuttujat
-let totalBunkers = 5; // Kokonaismäärä suojapaikkoja
-let foundBunkers = 0; // Aluksi löydettyjä suojapaikkoja
-
-// Päivittää suojapaikkalaskurin käyttöliittymässä
-function paivitaSuojapaikkaLaskuri() {
-    const bunkersElement = document.querySelector('#bunkers_found');
-    if (bunkersElement) {
-        bunkersElement.textContent = `${foundBunkers}/${totalBunkers}`;
-    }
-}
-
-// Lentotoiminnon API-kutsu (päivitetty laskurilla)
+// Lentotoiminnon API-kutsu
 async function lennäLentokentälle(kohdeId) {
     try {
         const vastaus = await fetch(`${apiUrl}flyto?dest=${kohdeId}`);
         const pelidata = await vastaus.json();
 
-        if (pelidata.status === 'goal') {
-            foundBunkers++; // Lisätään löydetty suojapaikka
-            paivitaSuojapaikkaLaskuri(); // Päivitetään laskuri käyttöliittymässä
-            alert('You found a protected area! Keep going!');
-        } else if (pelidata.status === 'victory') {
-            alert('You found all protected areas! Game Over. Congratulations!');
+        if (pelidata.status === 'victory') {
+            alert('You found the bunker! Game Over. Congratulations!');
             avaaModal(); // Peli alkaa alusta
         } else if (pelidata.status === 'restart') {
             alert(pelidata.message); // Näytetään käyttäjälle viesti
@@ -173,16 +143,16 @@ async function lennäLentokentälle(kohdeId) {
     }
 }
 
-// Pelin alustus (päivitetty laskurin nollaus)
-async function aloitaPeli() {
-    try {
-        foundBunkers = 0; // Nollataan löydetyt suojapaikat pelin alkaessa
-        paivitaSuojapaikkaLaskuri(); // Päivitetään käyttöliittymä
-        const vastaus = await fetch(`${apiUrl}newgame?player=${playerName}&loc=EFHK`); // Haetaan uusi peli
-        const pelidata = await vastaus.json(); // Muutetaan vastaus JSON-muotoon
-        asetaKartta(pelidata);
-    } catch (virhe) {
-        console.error('Virhe pelin alustuksessa:', virhe);
-        alert('Pelin aloitus epäonnistui. Yritä uudelleen.');
+// Modalin avaamisen apufunktio
+function avaaModal() {
+    const modal = document.querySelector('#player-modal');
+    const backdrop = document.querySelector('.modal-backdrop');
+    if (modal) {
+        modal.style.display = 'block';
+        modal.classList.add('show');
+    }
+    if (backdrop) {
+        backdrop.style.display = 'block';
+        backdrop.classList.add('show');
     }
 }
