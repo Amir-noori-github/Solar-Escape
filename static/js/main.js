@@ -156,3 +156,4 @@ function avaaModal() {
         backdrop.classList.add('show');
     }
 }
+

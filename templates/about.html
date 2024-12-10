@@ -56,6 +56,37 @@
                 </p>
                 <p>Good luck on your journey, adventurer. Survival is in your hands!
                 </p>
+                <section>
+                    <header>
+                        <h2>Game Stats</h2>
+                    </header>
+                    <table class="task-table" style="width: 100%; border-collapse: collapse;">
+                        <tr>
+                            <td style="width: 50%; border: 1px solid #ddd; padding: 8px;">Player Name</td>
+                            <td style="width: 50%; border: 1px solid #ddd; padding: 8px;">{{ player_stats.player_name if player_stats else 'Empty' }}</td>
+                        </tr>
+                        <tr>
+                            <td style="width: 50%; border: 1px solid #ddd; padding: 8px;">Wins</td>
+                            <td style="width: 50%; border: 1px solid #ddd; padding: 8px;">{{ player_stats.wins if player_stats else '0' }}</td>
+                        </tr>
+                        <tr>
+                            <td style="width: 50%; border: 1px solid #ddd; padding: 8px;">Losses</td>
+                            <td style="width: 50%; border: 1px solid #ddd; padding: 8px;">{{ player_stats.losses if player_stats else '0' }}</td>
+                        </tr>
+                        <tr>
+                            <td style="width: 50%; border: 1px solid #ddd; padding: 8px;">Airports Visited</td>
+                            <td style="width: 50%; border: 1px solid #ddd; padding: 8px;">{{ player_stats.airports_visited if player_stats else 'None' }}</td>
+                        </tr>
+                        <tr>
+                            <td style="width: 50%; border: 1px solid #ddd; padding: 8px;">Number of Airports Visited</td>
+                            <td style="width: 50%; border: 1px solid #ddd; padding: 8px;">{{ player_stats.num_airports_visited if player_stats else '0' }}</td>
+                        </tr>
+                        <tr>
+                            <td style="width: 50%; border: 1px solid #ddd; padding: 8px;">Distance Traveled</td>
+                            <td style="width: 50%; border: 1px solid #ddd; padding: 8px;">{{ player_stats.distance_traveled | round(2) if player_stats else '0' }} km</td>
+                        </tr>
+                    </table>
+                </section>
             </article>
         </main>
         <!-- Footer Section -->
