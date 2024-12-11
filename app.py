@@ -3,6 +3,10 @@ from geopy.distance import geodesic as calculate_distance
 import random
 import mysql.connector
 from flask_cors import CORS
+from dotenv import load_dotenv
+import os
+
+load_dotenv()
 
 def create_app():
     app = Flask(__name__)
@@ -105,8 +109,8 @@ def new_game():
             'player_name': player_name,
             'current_airport': start_location,
             'visited_airports': [start_location],
-            'remaining_time': 250,
-            'remaining_distance': 1500
+            'remaining_time': 150,
+            'remaining_distance': 1000
         })
 
         return jsonify({
